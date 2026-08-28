@@ -5,16 +5,19 @@ module type CREET = sig
 	type t
 	
 	val create : unit -> t
-	val move : t -> unit Lwt.t
+	val move : t -> unit Lwt.t 
+	val contaminated : t -> unit
 end
 
 module Creet : CREET = struct
+	type state = Healthy | Contaminated | Berserk | Mean
 	type t = {
 		div : Dom_html.divElement Js.t;
 		mutable x : float;
 		mutable y : float;
 		mutable dx : float;
 		mutable dy : float;
+		mutable state : state;
 		mutable size : int;
 		mutable speed : float;
 	}
@@ -23,14 +26,14 @@ module Creet : CREET = struct
 		let doc = Dom_html.document in
 		let body = doc##.body in
 		let size = 50 in
-		let speed = 6.0 in
+		let speed = 4.0 in
 		let angle = Random.float (2.0 *. Float.pi) in
 		let div = Dom_html.createDiv doc in
 
 		div##.style##.position := Js.string "absolute";
 		div##.style##.width := Js.string (string_of_int size ^ "px");
 		div##.style##.height := Js.string (string_of_int size ^ "px");
-		div##.style##.backgroundColor := Js.string "red";
+		div##.style##.backgroundColor := Js.string "green";
 		div##.style##.borderRadius := Js.string "50%";
 		Dom.appendChild body div;
 		let width = Dom_html.window##.innerWidth in
@@ -43,14 +46,47 @@ module Creet : CREET = struct
 			y;
 			dx = speed *. (cos angle);
 			dy = speed *. (sin angle);
+			state = Healthy;
 			size;
 			speed;
 		}
 			
+	let contaminated creet =
+		match creet.state with
+		| Contaminated 
+		| Berserk 
+		| Mean -> ()
+		| Healthy -> (
+			let random = Random.int 100 in
+			let angle = acos (creet.dx /. creet.speed) in
+
+			creet.speed <- creet.speed *. 0.85;
+			creet.dx <- creet.speed *. (cos angle);
+			creet.dy <- creet.speed *. (sin angle);
+
+			if creet.state != Healthy then
+				()
+			else if random <= 9 then (
+				creet.state <- Berserk;
+				creet.div##.style##.backgroundColor := Js.string "orange"
+			)
+			else if random <= 19 then (
+				creet.state <- Mean;
+				creet.div##.style##.backgroundColor := Js.string "purple";
+				creet.size <- int_of_float(float_of_int(creet.size) *. 0.85);
+				creet.div##.style##.width := Js.string (string_of_int creet.size ^ "px");
+				creet.div##.style##.height := Js.string (string_of_int creet.size ^ "px")
+			)
+			else (
+				creet.state <- Contaminated;
+				creet.div##.style##.backgroundColor := Js.string "red"
+			)
+		)
+
 	let move creet =
 		let largeur = Dom_html.window##.innerWidth in
 		let hauteur = Dom_html.window##.innerHeight in
-		
+
 		let rec loop () = 
 			(* Random dir *)
 			if Random.int 500 = 0 then begin
@@ -97,6 +133,8 @@ Random.self_init ();
 	let rec aux n =
 		if n >= 0 then begin
 			let c = Creet.create () in
+			if n < 5 then
+				Creet.contaminated c;
 			Lwt.async (fun () -> Creet.move c);
 			aux (n - 1)
 		end;
