@@ -29,7 +29,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          opam install dune js_of_ocaml js_of_ocaml-ppx -y
+          opam install lwt js_of_ocaml js_of_ocaml-lwt -y
           opam install . --deps-only -y
       
       - name: Build
