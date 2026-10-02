@@ -29,10 +29,13 @@ jobs:
 
       - name: Install dependencies
         run: |
+          opam install dune js_of_ocaml js_of_ocaml-ppx -y
           opam install . --deps-only -y
-
+      
       - name: Build
-        run: dune build
+        run: |
+          eval $(opam env)
+          dune build
 
       - name: Prepare site
         run: |
