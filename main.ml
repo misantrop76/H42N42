@@ -84,6 +84,8 @@ module Creet : CREET = struct
     let doc = Dom_html.window##.document in
     let div = Dom_html.createDiv doc in
     
+    div##.style##.border := Js.string "2px solid #ffffffa8";
+    (* div##.style##.boxShadow := Js.string "0 3px 7px #16321c66"; *)
     div##.style##.position := Js.string "absolute";
     div##.style##.width := Js.string (string_of_int size ^ "px");
     div##.style##.height := Js.string (string_of_int size ^ "px");
@@ -289,16 +291,20 @@ let () =
     game##.style##.webkitUserSelect := Js.string "none";
     river##.style##.width := Js.string "100%";
     river##.style##.height := Js.string "15%";
-    river##.style##.backgroundColor := Js.string "blue";
-
+    
     map##.style##.width := Js.string "100%";
     map##.style##.height := Js.string "70%";
-    map##.style##.backgroundColor := Js.string "lightgreen";
-
+    
     hospital##.style##.width := Js.string "100%";
     hospital##.style##.height := Js.string "15%";
-    hospital##.style##.backgroundColor := Js.string "lightgray";
+    river##.style##.background :=
+    Js.string "linear-gradient(180deg, #42b9e9, #1676b8)";
 
+    map##.style##.background :=
+    Js.string "linear-gradient(135deg, #a9df83, #6ebd69)";
+
+    hospital##.style##.background :=
+    Js.string "linear-gradient(180deg, #f0f3e9, #cbd8c6)";
     Dom.appendChild game river;
     Dom.appendChild game map;
     Dom.appendChild game hospital;
@@ -306,35 +312,65 @@ let () =
 
     let game_over_div = Dom_html.createDiv doc in
 
-    game_over_div##.style##.position := Js.string "absolute";
+
+
+    game_over_div##.innerHTML :=
+      Js.string (
+        "<div style='text-align:center;padding:30px'>" ^
+        "<div style='font-size:clamp(36px,6vw,60px);color:#ff7272;" ^
+        "text-shadow:0 0 20px #ff333366;margin-bottom:14px'>" ^
+        "GAME OVER</div>" ^
+        "<p style='font-size:18px;color:#eee;margin-bottom:28px'>" ^
+        "Tous les Healthy ont disparu...</p>" ^
+        "<button id='replay' style='padding:13px 30px;border:0;" ^
+        "border-radius:10px;background:#a8f06b;color:#17301b;" ^
+        "font-size:17px;font-weight:bold;cursor:pointer'>" ^
+        "↻ Rejouer</button></div>"
+        );
+    Dom.appendChild game game_over_div;
+        
+
+    let replay_button =
+    Js.Unsafe.coerce (Dom_html.getElementById "replay")
+    in
+
+    replay_button##.onclick := Dom_html.handler (fun _ ->
+    let location = Js.Unsafe.get Dom_html.window "location" in
+    ignore (Js.Unsafe.meth_call location "reload" [||]);
+    Js._false
+    );
+    (* game_over_div##.style##.position := Js.string "absolute";
     game_over_div##.style##.top := Js.string "0";
     game_over_div##.style##.left := Js.string "0";
     game_over_div##.style##.width := Js.string "100%";
     game_over_div##.style##.height := Js.string "100%";
     game_over_div##.style##.backgroundColor :=
-      Js.string "rgba(0, 0, 0, 0.75)";
+    Js.string "rgba(0, 0, 0, 0.75)";
     game_over_div##.style##.display := Js.string "none";
     (* game_over_div##.style##.alignItems := Js.string "center"; *)
     (* game_over_div##.style##.justifyContent := Js.string "center"; *)
     game_over_div##.style##.color := Js.string "white";
     game_over_div##.style##.fontSize := Js.string "60px";
     game_over_div##.style##.fontWeight := Js.string "bold";
-    game_over_div##.style##.zIndex := Js.string "1000";
+    game_over_div##.style##.zIndex := Js.string "1000"; *)
+    game_over_div##.style##.display := Js.string "none";
+    (* game_over_div##.style##.alignItems := Js.string "center"; *)
+    (* game_over_div##.style##.justifyContent := Js.string "center"; *)
+    (* game_over_div##.style##.textAlign := Js.string "center"; *)
 
-    game_over_div##.innerHTML :=
-      Js.string "GAME OVER";
+    (* game_over_div##.innerHTML :=
+      Js.string "GAME OVER"; *)
 
     let show_game_over () =
-      if not !game_over then begin
+    if not !game_over then begin
         game_over := true;
-
+        game_started := false;
+        held_creet := None;
         game_over_div##.style##.display := Js.string "flex";
-
         start_button##.style##.display := Js.string "none"
-      end
+    end
     in
 
-    Dom.appendChild game game_over_div;
 
     let has_healthy_creet () =
       List.exists
