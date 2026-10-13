@@ -56,6 +56,7 @@ module Creet : CREET = struct
         let random = Random.int 100 in
         creet.contamined_time <- 0;
         creet.healthySpeed <- creet.speed;
+        creet.div##.style##.zIndex := Js.string "100";
         creet.speed <- creet.speed *. 0.85;
         creet.dx <- creet.speed *. cos creet.angle;
         creet.dy <- creet.speed *. sin creet.angle;
@@ -91,6 +92,7 @@ module Creet : CREET = struct
     div##.style##.height := Js.string (string_of_int size ^ "px");
     div##.style##.backgroundColor := Js.string "green";
     div##.style##.borderRadius := Js.string "50%";
+    div##.style##.zIndex := Js.string "1";
     Dom.appendChild game div;
     let width = game##.clientWidth in
     let height = game##.clientHeight in
@@ -218,6 +220,7 @@ module Creet : CREET = struct
     if creet.state != Healthy then 
     begin
       creet.state <- Healthy;
+      creet.div##.style##.zIndex := Js.string "1";
       creet.size <- creet.healthySize;
       creet.speed <- creet.healthySpeed;
       creet.dx <- creet.speed *. cos creet.angle;
@@ -309,10 +312,17 @@ let () =
     Dom.appendChild game map;
     Dom.appendChild game hospital;
 
-
     let game_over_div = Dom_html.createDiv doc in
-
-
+    game_over_div##.style##.position := Js.string "absolute";
+    game_over_div##.style##.top := Js.string "0";
+    game_over_div##.style##.left := Js.string "0";
+    game_over_div##.style##.width := Js.string "100%";
+    game_over_div##.style##.height := Js.string "100%";
+    game_over_div##.style##.backgroundColor := Js.string "rgba(0, 0, 0, 0.8)";
+    game_over_div##.style##.zIndex := Js.string "1000";
+    game_over_div##.style##.display := Js.string "none"; (* Masqué au début *)
+    Js.Unsafe.set game_over_div##.style "alignItems" (Js.string "center");
+    Js.Unsafe.set game_over_div##.style "justifyContent" (Js.string "center");
 
     game_over_div##.innerHTML :=
       Js.string (
@@ -326,49 +336,29 @@ let () =
         "border-radius:10px;background:#a8f06b;color:#17301b;" ^
         "font-size:17px;font-weight:bold;cursor:pointer'>" ^
         "↻ Rejouer</button></div>"
-        );
+      );
     Dom.appendChild game game_over_div;
         
-
-    let replay_button =
-    Js.Unsafe.coerce (Dom_html.getElementById "replay")
-    in
-
-    replay_button##.onclick := Dom_html.handler (fun _ ->
-    let location = Js.Unsafe.get Dom_html.window "location" in
-    ignore (Js.Unsafe.meth_call location "reload" [||]);
-    Js._false
+    Lwt.async (fun () ->
+      Js_of_ocaml_lwt.Lwt_js.yield () >>= fun () ->
+      let replay_button = Js.Unsafe.coerce (Dom_html.getElementById "replay") in
+      replay_button##.onclick := Dom_html.handler (fun _ ->
+        let location = Js.Unsafe.get Dom_html.window "location" in
+        ignore (Js.Unsafe.meth_call location "reload" [||]);
+        Js._false
+      );
+      Lwt.return_unit
     );
-    (* game_over_div##.style##.position := Js.string "absolute";
-    game_over_div##.style##.top := Js.string "0";
-    game_over_div##.style##.left := Js.string "0";
-    game_over_div##.style##.width := Js.string "100%";
-    game_over_div##.style##.height := Js.string "100%";
-    game_over_div##.style##.backgroundColor :=
-    Js.string "rgba(0, 0, 0, 0.75)";
-    game_over_div##.style##.display := Js.string "none";
-    (* game_over_div##.style##.alignItems := Js.string "center"; *)
-    (* game_over_div##.style##.justifyContent := Js.string "center"; *)
-    game_over_div##.style##.color := Js.string "white";
-    game_over_div##.style##.fontSize := Js.string "60px";
-    game_over_div##.style##.fontWeight := Js.string "bold";
-    game_over_div##.style##.zIndex := Js.string "1000"; *)
-    game_over_div##.style##.display := Js.string "none";
-    (* game_over_div##.style##.alignItems := Js.string "center"; *)
-    (* game_over_div##.style##.justifyContent := Js.string "center"; *)
-    (* game_over_div##.style##.textAlign := Js.string "center"; *)
-
-    (* game_over_div##.innerHTML :=
-      Js.string "GAME OVER"; *)
 
     let show_game_over () =
-    if not !game_over then begin
+    if not !game_over then 
+      begin
         game_over := true;
         game_started := false;
         held_creet := None;
         game_over_div##.style##.display := Js.string "flex";
         start_button##.style##.display := Js.string "none"
-    end
+      end
     in
 
 
