@@ -294,20 +294,29 @@ let () =
     game##.style##.webkitUserSelect := Js.string "none";
     river##.style##.width := Js.string "100%";
     river##.style##.height := Js.string "15%";
+    river##.style##.backgroundImage := Js.string "url('assets/river.jpg')";
+
+    Js.Unsafe.set river##.style "backgroundSize" (Js.string "cover");
+    river##.style##.backgroundPosition := Js.string "center";
+    river##.style##.backgroundRepeat := Js.string "no-repeat";
     
     map##.style##.width := Js.string "100%";
     map##.style##.height := Js.string "70%";
     
     hospital##.style##.width := Js.string "100%";
     hospital##.style##.height := Js.string "15%";
-    river##.style##.background :=
-    Js.string "linear-gradient(180deg, #42b9e9, #1676b8)";
+    hospital##.style##.backgroundImage := Js.string "url('assets/hospital.jpg')";
+    (* river##.style##.background :=
+    Js.string "linear-gradient(180deg, #42b9e9, #1676b8)"; *)
 
     map##.style##.background :=
-    Js.string "linear-gradient(135deg, #a9df83, #6ebd69)";
+    Js.string "linear-gradient(135deg, #555555, #555555)";
 
-    hospital##.style##.background :=
-    Js.string "linear-gradient(180deg, #f0f3e9, #cbd8c6)";
+    (* hospital##.style##.background :=
+    Js.string "linear-gradient(180deg, #f0f3e9, #cbd8c6)"; *)
+    Js.Unsafe.set hospital##.style "backgroundSize" (Js.string "cover");
+    hospital##.style##.backgroundPosition := Js.string "center";
+    hospital##.style##.backgroundRepeat := Js.string "no-repeat";
     Dom.appendChild game river;
     Dom.appendChild game map;
     Dom.appendChild game hospital;
