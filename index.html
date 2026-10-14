@@ -156,6 +156,111 @@
       text-align: center;
     }
 
+
+    #settings {
+    width: min(1000px, 95vw);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    padding: 16px 20px;
+
+    background: linear-gradient(135deg, #25392b, #18251e);
+    border: 2px solid #435b45;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px #0004;
+    }
+
+    .setting {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+    }
+
+    .setting label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    color: #e5efdf;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    }
+
+    .setting label span {
+    color: #a8f06b;
+    white-space: nowrap;
+    }
+
+    .setting input[type="range"] {
+    width: 100%;
+    accent-color: #a8f06b;
+    cursor: pointer;
+    }
+
+    .setting input[type="range"]:disabled {
+    accent-color: #737d72;
+    cursor: not-allowed;
+    opacity: 0.45;
+    }
+
+    #settings:has(input:disabled) {
+    filter: saturate(0.55);
+    border-color: #3a453b;
+    }
+
+    @media (max-width: 600px) {
+    #settings {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        padding: 14px;
+    }
+    }
+
+
+    #score-panel {
+    width: min(1000px, 95vw);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 12px 20px;
+
+    background: linear-gradient(135deg, #25392b, #18251e);
+    border: 2px solid #435b45;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px #0004;
+    }
+
+    .score-label {
+    color: #c5d5c2;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    }
+
+    #score {
+    color: #a8f06b;
+    font-size: 28px;
+    font-weight: 900;
+    text-shadow: 0 0 14px #73d94b66;
+    font-variant-numeric: tabular-nums;
+    }
+
+    .score-description {
+    color: #b5c6b5;
+    font-size: 12px;
+    }
+
+    @media (max-width: 600px) {
+    #score-panel {
+        flex-wrap: wrap;
+        gap: 8px 12px;
+    }
+    }
+
+
     @media (max-width: 600px) {
       body {
         padding: 10px 5px;
@@ -175,18 +280,37 @@
 </head>
 
 <body>
-  <h1 id="title">H42N42</h1>
-  <p id="subtitle">Survis. Soigne. Protège les Creets de la radioactivité.</p>
+    <h1 id="title">H42N42</h1>
+    <p id="subtitle">Survive. Heal. Protect the Creets from radioactivity.</p>
+    <div id="score-panel">
+        <span class="score-label">🏆 BEST SCORE</span>
+        <span id="score">0</span>
+        <span class="score-description">Maximum healthy, live Creets</span>
+    </div>
+    <div id="game">
+        <button id="start">
+            <span style="font-size: 28px;">▶</span>
+            <span>PLAY</span>
+        </button>
+    </div>
+    <div id="settings">
+        <div class="setting">
+        <label for="speed">⚡ Speed <span id="speed-value">2.0</span></label>
+        <input id="speed" type="range" min="1.5" max="3.0" step="0.1" value="2.0">
+        </div>
 
-  <div id="game">
-    <button id="start">
-        <span style="font-size: 28px;">▶</span>
-        <span>PLAY</span>
-    </button>
-  </div>
+        <div class="setting">
+        <label for="size">● Size <span id="size-value">50 px</span></label>
+        <input id="size" type="range" min="40" max="80" step="5" value="50">
+        </div>
 
-  <p id="footer">ÉVITE LA CONTAMINATION · UTILISE L'HÔPITAL POUR SOIGNER LES CREETS</p>
+        <div class="setting">
+        <label for="timeToDie">☠ Time to die <span id="time-value">1000</span></label>
+        <input id="timeToDie" type="range" min="500" max="2000" step="100" value="1000">
+        </div>
+    </div>
+    <p id="footer">AVOID CONTAMINATION · USE THE HOSPITAL TO TREAT THE SICK</p>
 
-  <script src="main.bc.js"></script>
+    <script src="_build/default/main.bc.js"></script>
 </body>
 </html>

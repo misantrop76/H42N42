@@ -4,8 +4,8 @@ open Lwt.Infix
 module type CREET = sig
   type t
   val reset_healthy_time : t -> unit
-  val create : Dom_html.divElement Js.t -> t
-  val move : t -> unit Lwt.t
+  val create : Dom_html.divElement Js.t -> int -> float -> t
+  val move : t -> int -> unit Lwt.t
   val is_healthy_for : t -> int -> bool
   val is_contaminated : t -> bool
   val collides : t -> t -> bool
@@ -14,7 +14,7 @@ module type CREET = sig
   val is_heal : t -> bool
   val is_dead : t -> bool
   val is_mean : t -> bool
-  val is_in : t -> float -> float -> bool 
+  val is_in : t -> float -> float -> bool
   val set_position : t -> float -> float -> unit
   val set_held : t -> bool -> unit
   val follow_nearest_healthy : t -> t list -> unit
@@ -77,16 +77,13 @@ module Creet : CREET = struct
         )
       )
 
-  let create game = 
-    let size = 50 in
-    let speed = 2.0 in
+  let create game size speed = 
     let angle = Random.float (2.0 *. Float.pi) in
     let healthy_time = 0 in
     let doc = Dom_html.window##.document in
     let div = Dom_html.createDiv doc in
-    
+
     div##.style##.border := Js.string "2px solid #ffffffa8";
-    (* div##.style##.boxShadow := Js.string "0 3px 7px #16321c66"; *)
     div##.style##.position := Js.string "absolute";
     div##.style##.width := Js.string (string_of_int size ^ "px");
     div##.style##.height := Js.string (string_of_int size ^ "px");
@@ -117,8 +114,7 @@ module Creet : CREET = struct
       held = false;
     }
 
-
-  let move creet =
+  let move creet time_to_die =
     let largeur = creet.game##.clientWidth in
     let hauteur = creet.game##.clientHeight in
     
@@ -154,7 +150,7 @@ module Creet : CREET = struct
             creet.dy <- creet.dy *. -1.0
           end;
           
-          (* H42N42 River *)
+          (* River *)
           if creet.y < (14.0 *. ((float_of_int hauteur) /. 100.0)) then
             contaminated creet;
           
@@ -171,7 +167,7 @@ module Creet : CREET = struct
                   end;
               creet.contamined_time <- (creet.contamined_time + 1);
             end;
-          if (creet.contamined_time >= 1500) then
+          if (creet.contamined_time >= time_to_die) then
             begin
               creet.div##.style##.display := Js.string "none";
               creet.state <- Dead;
@@ -290,6 +286,39 @@ let () =
     let game_started = ref false in
     let game_over = ref false in
 
+    let best_score = ref 0 in
+    let score_display = Js.Unsafe.coerce (Dom_html.getElementById "score") in
+
+    let speed_value = Js.Unsafe.coerce (Dom_html.getElementById "speed-value") in
+    let size_value = Js.Unsafe.coerce (Dom_html.getElementById "size-value") in
+    let time_value = Js.Unsafe.coerce (Dom_html.getElementById "time-value") in
+
+    let speed_slider = Js.Unsafe.coerce (Dom_html.getElementById "speed") in
+    let size_slider = Js.Unsafe.coerce (Dom_html.getElementById "size") in
+    let time_slider = Js.Unsafe.coerce (Dom_html.getElementById "timeToDie") in
+
+    speed_slider##.oninput := Dom_html.handler (fun _ ->
+      speed_value##.textContent :=
+        Js.some (Js.string (Js.to_string speed_slider##.value));
+      Js._true
+    );
+
+    size_slider##.oninput := Dom_html.handler (fun _ ->
+      size_value##.textContent :=
+        Js.some (Js.to_string size_slider##.value ^ " px");
+      Js._true
+    );
+
+    time_slider##.oninput := Dom_html.handler (fun _ ->
+      time_value##.textContent :=
+        Js.some (Js.to_string time_slider##.value);
+      Js._true
+    );
+
+    let speed = ref 2.0 in (* 1.5 - 3.0 *)
+    let size = ref 50 in (* 40 - 80 *)
+    let timeToDie = ref 1000 in (* 500 - 2000 *)
+
     game##.style##.userSelect := Js.string "none";
     game##.style##.webkitUserSelect := Js.string "none";
     river##.style##.width := Js.string "100%";
@@ -340,14 +369,17 @@ let () =
         "text-shadow:0 0 20px #ff333366;margin-bottom:14px'>" ^
         "GAME OVER</div>" ^
         "<p style='font-size:18px;color:#eee;margin-bottom:28px'>" ^
-        "Tous les Healthy ont disparu...</p>" ^
+        "All the Healthy Creets have disappeared...</p>" ^
+        "<p style='font-size:22px;color:#a8f06b;font-weight:bold;margin-bottom:28px'>" ^
+        "🏆 Score : <span id='final-score'>0</span></p>" ^
         "<button id='replay' style='padding:13px 30px;border:0;" ^
         "border-radius:10px;background:#a8f06b;color:#17301b;" ^
         "font-size:17px;font-weight:bold;cursor:pointer'>" ^
         "↻ Rejouer</button></div>"
       );
+
     Dom.appendChild game game_over_div;
-        
+
     Lwt.async (fun () ->
       Js_of_ocaml_lwt.Lwt_js.yield () >>= fun () ->
       let replay_button = Js.Unsafe.coerce (Dom_html.getElementById "replay") in
@@ -365,16 +397,37 @@ let () =
         game_over := true;
         game_started := false;
         held_creet := None;
+
+        let final_score = Js.Unsafe.coerce (Dom_html.getElementById "final-score") in
+        final_score##.textContent := Js.some (Js.string (string_of_int !best_score));
         game_over_div##.style##.display := Js.string "flex";
         start_button##.style##.display := Js.string "none"
       end
     in
 
-
     let has_healthy_creet () =
       List.exists
         (fun c -> not (Creet.is_contaminated c) && not (Creet.is_dead c))
         !creets
+    in
+
+    let healthy_count () =
+      List.length (
+        List.filter
+          (fun c ->
+            not (Creet.is_contaminated c) &&
+            not (Creet.is_dead c))
+          !creets
+      )
+    in
+
+    let update_score () =
+      let current = healthy_count () in
+      if current > !best_score then (
+        best_score := current;
+        score_display##.textContent :=
+          Js.some (Js.string (string_of_int !best_score))
+      )
     in
 
     let rec contamination_loop () =
@@ -403,12 +456,12 @@ let () =
 
     let rec reproduction_loop () =
       Js_of_ocaml_lwt.Lwt_js.sleep 0.1 >>= fun () ->
-        (* let maxSpeed = List.fold_left (fun acc x -> max acc x) 0 [4; 12; 3; 8] *)
         if List.exists (fun c -> Creet.is_healthy_for c 300) !creets
         then begin
-          let c = Creet.create game in
+          let c = Creet.create game !size !speed in
           creets := c :: !creets;
-          Lwt.async (fun () -> Creet.move c);
+          update_score();
+          Lwt.async (fun () -> Creet.move c !timeToDie);
           List.iter
           (fun c -> Creet.reset_healthy_time c)
           !creets
@@ -417,10 +470,19 @@ let () =
     in
 
     start_button##.onclick := Dom_html.handler (fun _ ->
+        speed := float_of_string (Js.to_string speed_slider##.value);
+        size := int_of_string (Js.to_string size_slider##.value);
+        timeToDie := int_of_string (Js.to_string time_slider##.value);
+
+        speed_slider##.disabled := Js._true;
+        size_slider##.disabled := Js._true;
+        time_slider##.disabled := Js._true;
+
         game_started := true;
-        let c = Creet.create game in
-        Lwt.async (fun () -> Creet.move c);
+        let c = Creet.create game !size !speed in
+        Lwt.async (fun () -> Creet.move c !timeToDie);
         creets := c :: !creets;
+        update_score();
         start_button##.style##.display := Js.string "none";
       Js._true
     );
@@ -476,7 +538,8 @@ let () =
             let hauteur = game##.clientHeight in
             if y >= (float_of_int hauteur) *. 0.85 then
               Creet.heal c;
-              Js._true)
+            update_score ();
+            Js._true)
         end
       else
         Js._true
@@ -495,6 +558,7 @@ let () =
             let hauteur = game##.clientHeight in
             if y >= (float_of_int hauteur) *. 0.85 then
               Creet.heal c;
+            update_score ();
             Js._true)
         end
       else
